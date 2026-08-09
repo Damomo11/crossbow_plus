@@ -8,6 +8,7 @@
     "Damomo1"
   ],
   "license": "MIT",
+  "icon": "assets/crossbow_plus/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
