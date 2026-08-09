@@ -21,6 +21,7 @@ public final class CrossbowPlusConfig {
 	private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("crossbow_plus.json");
 	private static boolean enabled = true;
 	private static boolean axShulkersArrowRefill = false;
+	private static boolean axShulkersSingleArrow = false;
 
 	private CrossbowPlusConfig() {
 	}
@@ -40,6 +41,7 @@ public final class CrossbowPlusConfig {
 			JsonObject object = root.getAsJsonObject();
 			enabled = readBoolean(object, "enabled", true);
 			axShulkersArrowRefill = readBoolean(object, "axShulkersArrowRefill", false);
+			axShulkersSingleArrow = readBoolean(object, "axShulkersSingleArrow", false);
 		} catch (Exception exception) {
 			CrossbowPlusClient.LOGGER.error("Failed to load {}", CONFIG_PATH, exception);
 		}
@@ -49,6 +51,7 @@ public final class CrossbowPlusConfig {
 		JsonObject object = new JsonObject();
 		object.addProperty("enabled", enabled);
 		object.addProperty("axShulkersArrowRefill", axShulkersArrowRefill);
+		object.addProperty("axShulkersSingleArrow", axShulkersSingleArrow);
 
 		try {
 			Files.createDirectories(CONFIG_PATH.getParent());
@@ -81,6 +84,14 @@ public final class CrossbowPlusConfig {
 
 	public static void setAxShulkersArrowRefillEnabled(boolean value) {
 		axShulkersArrowRefill = value;
+	}
+
+	public static boolean isAxShulkersSingleArrowEnabled() {
+		return axShulkersSingleArrow;
+	}
+
+	public static void setAxShulkersSingleArrowEnabled(boolean value) {
+		axShulkersSingleArrow = value;
 	}
 
 	private static boolean readBoolean(JsonObject object, String key, boolean defaultValue) {

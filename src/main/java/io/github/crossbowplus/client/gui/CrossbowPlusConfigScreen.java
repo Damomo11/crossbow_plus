@@ -38,6 +38,13 @@ public final class CrossbowPlusConfigScreen extends Screen {
 					CrossbowPlusConfig.save();
 				})
 		);
+		options.addChild(
+			CycleButton.onOffBuilder(CrossbowPlusConfig.isAxShulkersSingleArrowEnabled())
+				.create(0, 0, OPTION_WIDTH, 20, Component.translatable("crossbow_plus.config.ax_shulkers_single_arrow"), (button, value) -> {
+					CrossbowPlusConfig.setAxShulkersSingleArrowEnabled(value);
+					CrossbowPlusConfig.save();
+				})
+		);
 		this.layout.addToFooter(Button.builder(CommonComponents.GUI_DONE, button -> this.onClose()).width(200).build());
 		this.layout.visitWidgets(this::addRenderableWidget);
 		this.repositionElements();

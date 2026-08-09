@@ -23,6 +23,10 @@ configuration screen. Mod Menu is optional and is not required for rapid fire.
   AxShulkers shulker box in the player inventory when the held crossbow runs out
   of ammunition. The shulker screen is handled in the background and is not
   displayed.
+- **Take one arrow per shot** changes AxShulkers refill to take exactly one
+  arrow for each shot instead of moving a whole stack. It is disabled by
+  default, so stack refill remains the default behavior. One empty inventory
+  slot is required temporarily while the arrow is used.
 
 AxShulkers refill requires the server to run
 [AxShulkers](https://github.com/Artillex-Studios/AxShulkers) with
@@ -37,4 +41,4 @@ quick-move behavior.
 .\gradlew.bat build
 ```
 
-The distributable jar is written to `build/libs/crossbow-plus-1.2.0.jar`.
+The distributable jar is written to `build/libs/crossbow-plus-1.3.0.jar`.

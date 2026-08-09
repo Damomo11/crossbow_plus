@@ -1,5 +1,6 @@
 {
   "crossbow_plus.config.title": "弩增强",
   "crossbow_plus.config.enabled": "启用功能",
-  "crossbow_plus.config.ax_shulkers_arrow_refill": "AxShulkers 潜影盒补充箭矢"
+  "crossbow_plus.config.ax_shulkers_arrow_refill": "AxShulkers 潜影盒补充箭矢",
+  "crossbow_plus.config.ax_shulkers_single_arrow": "每次发射从潜影盒取一支箭"
 }

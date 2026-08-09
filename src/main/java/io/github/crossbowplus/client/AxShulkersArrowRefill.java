@@ -24,11 +24,18 @@ public final class AxShulkersArrowRefill {
 	private static int clickedInventorySlot = -1;
 	private static int waitTicks;
 	private static int retryCooldown;
+	private static boolean singleArrowMode;
 
 	private AxShulkersArrowRefill() {
 	}
 
-	public static boolean tick(Minecraft minecraft, ItemStack crossbow, boolean enabled, boolean useKeyDown) {
+	public static boolean tick(
+		Minecraft minecraft,
+		ItemStack crossbow,
+		boolean enabled,
+		boolean takeSingleArrow,
+		boolean useKeyDown
+	) {
 		LocalPlayer player = minecraft.player;
 		MultiPlayerGameMode gameMode = minecraft.gameMode;
 		if (player == null || gameMode == null) {
@@ -46,7 +53,7 @@ public final class AxShulkersArrowRefill {
 			case WAITING_FOR_CONTAINER -> waitForContainer(minecraft, player, gameMode);
 			case SEARCHING_CONTAINER -> searchContainer(player, gameMode);
 			case TRYING_NEXT_SHULKER -> tryNextShulker(minecraft, player, gameMode);
-			case IDLE -> startIfNeeded(minecraft, player, gameMode, crossbow, triggerActive);
+			case IDLE -> startIfNeeded(minecraft, player, gameMode, crossbow, triggerActive, takeSingleArrow);
 		};
 	}
 
@@ -70,7 +77,8 @@ public final class AxShulkersArrowRefill {
 		LocalPlayer player,
 		MultiPlayerGameMode gameMode,
 		ItemStack crossbow,
-		boolean triggerActive
+		boolean triggerActive,
+		boolean takeSingleArrow
 	) {
 		if (!triggerActive) {
 			retryCooldown = 0;
@@ -91,6 +99,7 @@ public final class AxShulkersArrowRefill {
 		}
 
 		nextInventorySlot = 0;
+		singleArrowMode = takeSingleArrow;
 		return tryNextShulker(minecraft, player, gameMode);
 	}
 
@@ -146,11 +155,13 @@ public final class AxShulkersArrowRefill {
 		waitTicks++;
 		int arrowSlot = findArrowSlot(chestMenu);
 		if (arrowSlot >= 0) {
-			gameMode.handleContainerInput(chestMenu.containerId, arrowSlot, 0, ContainerInput.QUICK_MOVE, player);
-			boolean movedArrows = hasInventoryArrows(player.getInventory());
+			boolean movedArrows = singleArrowMode
+				? moveSingleArrow(chestMenu, arrowSlot, player, gameMode)
+				: moveArrowStack(chestMenu, arrowSlot, player, gameMode);
+			boolean resumeUse = singleArrowMode && movedArrows;
 			player.closeContainer();
 			finish(movedArrows);
-			return true;
+			return !resumeUse;
 		}
 
 		if (hasAnyShulkerItem(chestMenu) || waitTicks >= EMPTY_CONTENT_WAIT_TICKS) {
@@ -159,6 +170,50 @@ public final class AxShulkersArrowRefill {
 			waitTicks = 0;
 		}
 		return true;
+	}
+
+	private static boolean moveArrowStack(
+		ChestMenu chestMenu,
+		int arrowSlot,
+		LocalPlayer player,
+		MultiPlayerGameMode gameMode
+	) {
+		gameMode.handleContainerInput(chestMenu.containerId, arrowSlot, 0, ContainerInput.QUICK_MOVE, player);
+		return hasInventoryArrows(player.getInventory());
+	}
+
+	private static boolean moveSingleArrow(
+		ChestMenu chestMenu,
+		int arrowSlot,
+		LocalPlayer player,
+		MultiPlayerGameMode gameMode
+	) {
+		Inventory inventory = player.getInventory();
+		OptionalInt emptyInventorySlot = findEmptyInventorySlot(inventory);
+		if (emptyInventorySlot.isEmpty() || !chestMenu.getCarried().isEmpty()) {
+			return false;
+		}
+
+		OptionalInt emptyMenuSlot = chestMenu.findSlot(inventory, emptyInventorySlot.getAsInt());
+		if (emptyMenuSlot.isEmpty()) {
+			return false;
+		}
+
+		gameMode.handleContainerInput(chestMenu.containerId, arrowSlot, 0, ContainerInput.PICKUP, player);
+		gameMode.handleContainerInput(chestMenu.containerId, emptyMenuSlot.getAsInt(), 1, ContainerInput.PICKUP, player);
+		gameMode.handleContainerInput(chestMenu.containerId, arrowSlot, 0, ContainerInput.PICKUP, player);
+
+		ItemStack movedArrow = inventory.getItem(emptyInventorySlot.getAsInt());
+		return movedArrow.is(ItemTags.ARROWS) && movedArrow.getCount() == 1 && chestMenu.getCarried().isEmpty();
+	}
+
+	private static OptionalInt findEmptyInventorySlot(Inventory inventory) {
+		for (int inventorySlot = 0; inventorySlot < Inventory.INVENTORY_SIZE; inventorySlot++) {
+			if (inventory.getItem(inventorySlot).isEmpty()) {
+				return OptionalInt.of(inventorySlot);
+			}
+		}
+		return OptionalInt.empty();
 	}
 
 	private static int findArrowSlot(AbstractContainerMenu menu) {
@@ -216,6 +271,7 @@ public final class AxShulkersArrowRefill {
 		clickedInventorySlot = -1;
 		waitTicks = 0;
 		retryCooldown = success ? 0 : FAILURE_RETRY_TICKS;
+		singleArrowMode = false;
 	}
 
 	private static void resetState() {
@@ -224,6 +280,7 @@ public final class AxShulkersArrowRefill {
 		clickedInventorySlot = -1;
 		waitTicks = 0;
 		retryCooldown = 0;
+		singleArrowMode = false;
 	}
 
 	private enum State {
