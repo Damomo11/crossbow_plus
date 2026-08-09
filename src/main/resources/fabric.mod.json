@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "crossbow_plus",
+  "version": "${version}",
+  "name": "Crossbow Plus",
+  "description": "Reproduces 0-tick periodic-use crossbow rapid fire while holding the use key.",
+  "authors": [
+    "crossbow_plus"
+  ],
+  "license": "MIT",
+  "environment": "client",
+  "mixins": [
+    {
+      "config": "crossbow_plus.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": ">=26.1 <26.2",
+    "java": ">=25"
+  }
+}
