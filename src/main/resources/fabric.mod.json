@@ -5,7 +5,7 @@
   "name": "Crossbow Plus",
   "description": "Reproduces 0-tick periodic-use crossbow rapid fire while holding the use key.",
   "authors": [
-    "crossbow_plus"
+    "Damomo1"
   ],
   "license": "MIT",
   "environment": "client",
