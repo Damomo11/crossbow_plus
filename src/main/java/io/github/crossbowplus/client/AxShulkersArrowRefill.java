@@ -9,7 +9,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -120,7 +120,7 @@ public final class AxShulkersArrowRefill {
 			nextInventorySlot = inventorySlot + 1;
 			waitTicks = 0;
 			state = State.WAITING_FOR_CONTAINER;
-			gameMode.handleContainerInput(player.inventoryMenu.containerId, menuSlot.getAsInt(), 1, ContainerInput.PICKUP, player);
+			gameMode.handleInventoryMouseClick(player.inventoryMenu.containerId, menuSlot.getAsInt(), 1, ClickType.PICKUP, player);
 			return true;
 		}
 
@@ -183,7 +183,7 @@ public final class AxShulkersArrowRefill {
 		LocalPlayer player,
 		MultiPlayerGameMode gameMode
 	) {
-		gameMode.handleContainerInput(containerMenu.containerId, arrowSlot, 0, ContainerInput.QUICK_MOVE, player);
+		gameMode.handleInventoryMouseClick(containerMenu.containerId, arrowSlot, 0, ClickType.QUICK_MOVE, player);
 		return hasInventoryArrows(player.getInventory());
 	}
 
@@ -204,9 +204,9 @@ public final class AxShulkersArrowRefill {
 			return false;
 		}
 
-		gameMode.handleContainerInput(containerMenu.containerId, arrowSlot, 0, ContainerInput.PICKUP, player);
-		gameMode.handleContainerInput(containerMenu.containerId, emptyMenuSlot.getAsInt(), 1, ContainerInput.PICKUP, player);
-		gameMode.handleContainerInput(containerMenu.containerId, arrowSlot, 0, ContainerInput.PICKUP, player);
+		gameMode.handleInventoryMouseClick(containerMenu.containerId, arrowSlot, 0, ClickType.PICKUP, player);
+		gameMode.handleInventoryMouseClick(containerMenu.containerId, emptyMenuSlot.getAsInt(), 1, ClickType.PICKUP, player);
+		gameMode.handleInventoryMouseClick(containerMenu.containerId, arrowSlot, 0, ClickType.PICKUP, player);
 
 		ItemStack movedArrow = inventory.getItem(emptyInventorySlot.getAsInt());
 		return movedArrow.is(ItemTags.ARROWS) && movedArrow.getCount() == 1 && containerMenu.getCarried().isEmpty();
@@ -282,7 +282,7 @@ public final class AxShulkersArrowRefill {
 		if (menuSlot.isPresent()
 			&& player.inventoryMenu.getCarried().is(ItemTags.SHULKER_BOXES)
 			&& player.inventoryMenu.getSlot(menuSlot.getAsInt()).getItem().isEmpty()) {
-			gameMode.handleContainerInput(player.inventoryMenu.containerId, menuSlot.getAsInt(), 1, ContainerInput.PICKUP, player);
+			gameMode.handleInventoryMouseClick(player.inventoryMenu.containerId, menuSlot.getAsInt(), 1, ClickType.PICKUP, player);
 		}
 	}
 
