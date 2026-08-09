@@ -13,9 +13,10 @@ repositories {
 }
 
 def modVersion = project.mod_version
+def artifactVersion = "${modVersion}+mc${project.artifact_minecraft_version}"
 def archiveBaseName = project.archives_base_name
 
-version = modVersion
+version = artifactVersion
 group = project.maven_group
 
 base {
