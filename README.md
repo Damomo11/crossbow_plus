@@ -41,4 +41,4 @@ quick-move behavior.
 .\gradlew.bat build
 ```
 
-The distributable jar is written to `build/libs/crossbow-plus-1.3.0.jar`.
+The distributable jar is written to `build/libs/crossbow-plus-1.3.1.jar`.

@@ -9,7 +9,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
@@ -58,11 +57,9 @@ public final class AxShulkersArrowRefill {
 	}
 
 	public static boolean shouldSuppressScreen(Minecraft minecraft, @Nullable Screen newScreen) {
-		if (state != State.WAITING_FOR_CONTAINER
+		if ((state != State.WAITING_FOR_CONTAINER && state != State.SEARCHING_CONTAINER)
 			|| minecraft.player == null
 			|| !(newScreen instanceof AbstractContainerScreen<?> containerScreen)
-			|| !(containerScreen.getMenu() instanceof ChestMenu chestMenu)
-			|| chestMenu.getRowCount() != 3
 			|| minecraft.player.containerMenu != containerScreen.getMenu()) {
 			return false;
 		}
@@ -132,39 +129,47 @@ public final class AxShulkersArrowRefill {
 	}
 
 	private static boolean waitForContainer(Minecraft minecraft, LocalPlayer player, MultiPlayerGameMode gameMode) {
-		if (player.containerMenu instanceof ChestMenu chestMenu && chestMenu.getRowCount() == 3) {
+		if (getShulkerSlotCount(player.containerMenu, player.getInventory()) == 27) {
 			minecraft.setScreen(null);
 			state = State.SEARCHING_CONTAINER;
 			waitTicks = 0;
 			return true;
 		}
 
-		if (minecraft.screen != null || ++waitTicks >= OPEN_TIMEOUT_TICKS) {
-			rollbackInventoryClick(player, gameMode);
+		if (minecraft.screen != null) {
+			closeOrRollback(player, gameMode);
+			finish(false);
+		} else if (++waitTicks >= OPEN_TIMEOUT_TICKS) {
+			closeOrRollback(player, gameMode);
 			finish(false);
 		}
 		return true;
 	}
 
 	private static boolean searchContainer(LocalPlayer player, MultiPlayerGameMode gameMode) {
-		if (!(player.containerMenu instanceof ChestMenu chestMenu) || chestMenu.getRowCount() != 3) {
+		AbstractContainerMenu containerMenu = player.containerMenu;
+		int shulkerSlotCount = getShulkerSlotCount(containerMenu, player.getInventory());
+		if (shulkerSlotCount != 27) {
+			if (containerMenu != player.inventoryMenu) {
+				player.closeContainer();
+			}
 			finish(false);
 			return true;
 		}
 
 		waitTicks++;
-		int arrowSlot = findArrowSlot(chestMenu);
+		int arrowSlot = findArrowSlot(containerMenu, shulkerSlotCount);
 		if (arrowSlot >= 0) {
 			boolean movedArrows = singleArrowMode
-				? moveSingleArrow(chestMenu, arrowSlot, player, gameMode)
-				: moveArrowStack(chestMenu, arrowSlot, player, gameMode);
+				? moveSingleArrow(containerMenu, arrowSlot, player, gameMode)
+				: moveArrowStack(containerMenu, arrowSlot, player, gameMode);
 			boolean resumeUse = singleArrowMode && movedArrows;
 			player.closeContainer();
 			finish(movedArrows);
 			return !resumeUse;
 		}
 
-		if (hasAnyShulkerItem(chestMenu) || waitTicks >= EMPTY_CONTENT_WAIT_TICKS) {
+		if (hasAnyShulkerItem(containerMenu, shulkerSlotCount) || waitTicks >= EMPTY_CONTENT_WAIT_TICKS) {
 			player.closeContainer();
 			state = State.TRYING_NEXT_SHULKER;
 			waitTicks = 0;
@@ -173,38 +178,38 @@ public final class AxShulkersArrowRefill {
 	}
 
 	private static boolean moveArrowStack(
-		ChestMenu chestMenu,
+		AbstractContainerMenu containerMenu,
 		int arrowSlot,
 		LocalPlayer player,
 		MultiPlayerGameMode gameMode
 	) {
-		gameMode.handleContainerInput(chestMenu.containerId, arrowSlot, 0, ContainerInput.QUICK_MOVE, player);
+		gameMode.handleContainerInput(containerMenu.containerId, arrowSlot, 0, ContainerInput.QUICK_MOVE, player);
 		return hasInventoryArrows(player.getInventory());
 	}
 
 	private static boolean moveSingleArrow(
-		ChestMenu chestMenu,
+		AbstractContainerMenu containerMenu,
 		int arrowSlot,
 		LocalPlayer player,
 		MultiPlayerGameMode gameMode
 	) {
 		Inventory inventory = player.getInventory();
 		OptionalInt emptyInventorySlot = findEmptyInventorySlot(inventory);
-		if (emptyInventorySlot.isEmpty() || !chestMenu.getCarried().isEmpty()) {
+		if (emptyInventorySlot.isEmpty() || !containerMenu.getCarried().isEmpty()) {
 			return false;
 		}
 
-		OptionalInt emptyMenuSlot = chestMenu.findSlot(inventory, emptyInventorySlot.getAsInt());
+		OptionalInt emptyMenuSlot = containerMenu.findSlot(inventory, emptyInventorySlot.getAsInt());
 		if (emptyMenuSlot.isEmpty()) {
 			return false;
 		}
 
-		gameMode.handleContainerInput(chestMenu.containerId, arrowSlot, 0, ContainerInput.PICKUP, player);
-		gameMode.handleContainerInput(chestMenu.containerId, emptyMenuSlot.getAsInt(), 1, ContainerInput.PICKUP, player);
-		gameMode.handleContainerInput(chestMenu.containerId, arrowSlot, 0, ContainerInput.PICKUP, player);
+		gameMode.handleContainerInput(containerMenu.containerId, arrowSlot, 0, ContainerInput.PICKUP, player);
+		gameMode.handleContainerInput(containerMenu.containerId, emptyMenuSlot.getAsInt(), 1, ContainerInput.PICKUP, player);
+		gameMode.handleContainerInput(containerMenu.containerId, arrowSlot, 0, ContainerInput.PICKUP, player);
 
 		ItemStack movedArrow = inventory.getItem(emptyInventorySlot.getAsInt());
-		return movedArrow.is(ItemTags.ARROWS) && movedArrow.getCount() == 1 && chestMenu.getCarried().isEmpty();
+		return movedArrow.is(ItemTags.ARROWS) && movedArrow.getCount() == 1 && containerMenu.getCarried().isEmpty();
 	}
 
 	private static OptionalInt findEmptyInventorySlot(Inventory inventory) {
@@ -216,8 +221,8 @@ public final class AxShulkersArrowRefill {
 		return OptionalInt.empty();
 	}
 
-	private static int findArrowSlot(AbstractContainerMenu menu) {
-		for (int slot = 0; slot < 27; slot++) {
+	private static int findArrowSlot(AbstractContainerMenu menu, int shulkerSlotCount) {
+		for (int slot = 0; slot < shulkerSlotCount; slot++) {
 			if (menu.getSlot(slot).getItem().is(ItemTags.ARROWS)) {
 				return slot;
 			}
@@ -225,13 +230,38 @@ public final class AxShulkersArrowRefill {
 		return -1;
 	}
 
-	private static boolean hasAnyShulkerItem(AbstractContainerMenu menu) {
-		for (int slot = 0; slot < 27; slot++) {
+	private static boolean hasAnyShulkerItem(AbstractContainerMenu menu, int shulkerSlotCount) {
+		for (int slot = 0; slot < shulkerSlotCount; slot++) {
 			if (menu.getSlot(slot).hasItem()) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	private static int getShulkerSlotCount(AbstractContainerMenu menu, Inventory inventory) {
+		if (menu == null || menu == inventory.player.inventoryMenu || menu.slots.isEmpty()) {
+			return 0;
+		}
+
+		int containerSize = menu.getSlot(0).container.getContainerSize();
+		if (containerSize != 27 || menu.slots.size() < containerSize + Inventory.INVENTORY_SIZE) {
+			return 0;
+		}
+
+		Object shulkerContainer = menu.getSlot(0).container;
+		for (int slot = 0; slot < containerSize; slot++) {
+			if (menu.getSlot(slot).container != shulkerContainer) {
+				return 0;
+			}
+		}
+
+		for (int slot = containerSize; slot < menu.slots.size(); slot++) {
+			if (menu.getSlot(slot).container == inventory) {
+				return containerSize;
+			}
+		}
+		return 0;
 	}
 
 	private static boolean hasInventoryArrows(Inventory inventory) {
@@ -257,12 +287,18 @@ public final class AxShulkersArrowRefill {
 	}
 
 	private static void abort(LocalPlayer player, MultiPlayerGameMode gameMode) {
-		if (state == State.WAITING_FOR_CONTAINER) {
-			rollbackInventoryClick(player, gameMode);
-		} else if (state == State.SEARCHING_CONTAINER && player.containerMenu != player.inventoryMenu) {
-			player.closeContainer();
+		if (state == State.WAITING_FOR_CONTAINER || state == State.SEARCHING_CONTAINER) {
+			closeOrRollback(player, gameMode);
 		}
 		resetState();
+	}
+
+	private static void closeOrRollback(LocalPlayer player, MultiPlayerGameMode gameMode) {
+		if (player.containerMenu != player.inventoryMenu) {
+			player.closeContainer();
+		} else {
+			rollbackInventoryClick(player, gameMode);
+		}
 	}
 
 	private static void finish(boolean success) {
