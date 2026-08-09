@@ -2,6 +2,16 @@ plugins {
 	id 'net.fabricmc.fabric-loom' version "${loom_version}"
 }
 
+repositories {
+	maven {
+		name = 'TerraformersMC'
+		url = 'https://maven.terraformersmc.com/releases/'
+		content {
+			includeGroup 'com.terraformersmc'
+		}
+	}
+}
+
 def modVersion = project.mod_version
 def archiveBaseName = project.archives_base_name
 
@@ -15,6 +25,7 @@ base {
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 }
 
 processResources {

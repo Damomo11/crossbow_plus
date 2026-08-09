@@ -9,6 +9,14 @@
   ],
   "license": "MIT",
   "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.github.crossbowplus.CrossbowPlusClient"
+    ],
+    "modmenu": [
+      "io.github.crossbowplus.compat.ModMenuIntegration"
+    ]
+  },
   "mixins": [
     {
       "config": "crossbow_plus.client.mixins.json",
@@ -19,5 +27,8 @@
     "fabricloader": ">=0.19.3",
     "minecraft": ">=26.1 <26.2",
     "java": ">=25"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

@@ -13,10 +13,28 @@ intentionally reproduces the 26.1.x rapid-fire bug.
 
 Fabric API is not required. Install the built jar in the client `mods` folder.
 
+## Configuration
+
+Install [Mod Menu](https://modrinth.com/mod/modmenu) to open the Crossbow Plus
+configuration screen. Mod Menu is optional and is not required for rapid fire.
+
+- **Enable Crossbow Plus** enables or disables all features.
+- **AxShulkers arrow refill** automatically takes one stack of arrows from an
+  AxShulkers shulker box in the player inventory when the held crossbow runs out
+  of ammunition. The shulker screen is handled in the background and is not
+  displayed.
+
+AxShulkers refill requires the server to run
+[AxShulkers](https://github.com/Artillex-Studios/AxShulkers) with
+`opening-from-inventory.enabled` enabled. The player must have the
+`axshulkers.use` and `axshulkers.modify` permissions. AxShulkers does not expose
+a client API, so this compatibility uses its standard inventory right-click and
+quick-move behavior.
+
 ## Build
 
 ```powershell
 .\gradlew.bat build
 ```
 
-The distributable jar is written to `build/libs/crossbow-plus-1.1.0.jar`.
+The distributable jar is written to `build/libs/crossbow-plus-1.2.0.jar`.
