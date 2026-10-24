@@ -3,6 +3,7 @@
   "package": "io.github.crossbowplus.mixin.client",
   "compatibilityLevel": "JAVA_25",
   "client": [
+    "GuiMixin",
     "MinecraftMixin"
   ],
   "injectors": {

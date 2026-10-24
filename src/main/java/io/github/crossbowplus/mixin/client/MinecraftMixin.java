@@ -4,7 +4,7 @@ import io.github.crossbowplus.client.AxShulkersArrowRefill;
 import io.github.crossbowplus.config.CrossbowPlusConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
@@ -26,17 +26,11 @@ abstract class MinecraftMixin {
 	public @Nullable LocalPlayer player;
 
 	@Shadow
-	public @Nullable Screen screen;
+	@Final
+	public Gui gui;
 
 	@Shadow
 	private void startUseItem() {
-	}
-
-	@Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
-	private void crossbowPlus$hideAxShulkersScreen(@Nullable Screen newScreen, CallbackInfo callbackInfo) {
-		if (AxShulkersArrowRefill.shouldSuppressScreen((Minecraft)(Object)this, newScreen)) {
-			callbackInfo.cancel();
-		}
 	}
 
 	@Inject(method = "tick", at = @At("RETURN"))
@@ -54,7 +48,7 @@ abstract class MinecraftMixin {
 			return;
 		}
 
-		if (CrossbowPlusConfig.isEnabled() && this.screen == null && useKeyDown && !crossbow.isEmpty()) {
+		if (CrossbowPlusConfig.isEnabled() && this.gui.screen() == null && useKeyDown && !crossbow.isEmpty()) {
 			this.startUseItem();
 		}
 	}

@@ -82,7 +82,7 @@ public final class AxShulkersArrowRefill {
 			return false;
 		}
 
-		if (minecraft.screen != null
+		if (minecraft.gui.screen() != null
 			|| player.containerMenu != player.inventoryMenu
 			|| CrossbowItem.isCharged(crossbow)
 			|| !player.getProjectile(crossbow).isEmpty()) {
@@ -101,7 +101,7 @@ public final class AxShulkersArrowRefill {
 	}
 
 	private static boolean tryNextShulker(Minecraft minecraft, LocalPlayer player, MultiPlayerGameMode gameMode) {
-		if (minecraft.screen != null || player.containerMenu != player.inventoryMenu) {
+		if (minecraft.gui.screen() != null || player.containerMenu != player.inventoryMenu) {
 			return true;
 		}
 
@@ -130,13 +130,13 @@ public final class AxShulkersArrowRefill {
 
 	private static boolean waitForContainer(Minecraft minecraft, LocalPlayer player, MultiPlayerGameMode gameMode) {
 		if (getShulkerSlotCount(player.containerMenu, player.getInventory()) == 27) {
-			minecraft.setScreen(null);
+			minecraft.gui.setScreen(null);
 			state = State.SEARCHING_CONTAINER;
 			waitTicks = 0;
 			return true;
 		}
 
-		if (minecraft.screen != null) {
+		if (minecraft.gui.screen() != null) {
 			closeOrRollback(player, gameMode);
 			finish(false);
 		} else if (++waitTicks >= OPEN_TIMEOUT_TICKS) {
