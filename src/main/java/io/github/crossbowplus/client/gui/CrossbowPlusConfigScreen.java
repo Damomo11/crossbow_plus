@@ -58,6 +58,6 @@ public final class CrossbowPlusConfigScreen extends Screen {
 	@Override
 	public void onClose() {
 		CrossbowPlusConfig.save();
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.gui.setScreen(this.parent);
 	}
 }
