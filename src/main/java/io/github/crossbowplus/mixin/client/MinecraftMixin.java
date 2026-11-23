@@ -41,7 +41,6 @@ abstract class MinecraftMixin {
 			(Minecraft)(Object)this,
 			crossbow,
 			CrossbowPlusConfig.isEnabled() && CrossbowPlusConfig.isAxShulkersArrowRefillEnabled(),
-			CrossbowPlusConfig.isAxShulkersSingleArrowEnabled(),
 			useKeyDown
 		);
 		if (this.player == null || refillBusy) {

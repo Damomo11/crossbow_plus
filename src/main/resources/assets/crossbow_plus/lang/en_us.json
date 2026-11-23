@@ -1,6 +1,5 @@
 {
   "crossbow_plus.config.title": "Crossbow Plus",
   "crossbow_plus.config.enabled": "Enable Crossbow Plus",
-  "crossbow_plus.config.ax_shulkers_arrow_refill": "AxShulkers arrow refill",
-  "crossbow_plus.config.ax_shulkers_single_arrow": "Take one arrow per shot"
+  "crossbow_plus.config.ax_shulkers_arrow_refill": "AxShulkers projectile refill"
 }
