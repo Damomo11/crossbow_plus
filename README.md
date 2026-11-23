@@ -20,18 +20,20 @@ Install [Mod Menu](https://modrinth.com/mod/modmenu) to open the Crossbow Plus
 configuration screen. Mod Menu is optional and is not required for rapid fire.
 
 - **Enable Crossbow Plus** enables or disables all features.
-- **AxShulkers projectile refill** automatically takes projectiles from the
-  player inventory and from AxShulkers shulker boxes in the player inventory
-  when the held crossbow runs out of ammunition. The shulker screen is handled
-  in the background and is not displayed.
+- **AxShulkers projectile refill** automatically takes projectiles from
+  AxShulkers shulker boxes in the player inventory when the held crossbow runs
+  out of ammunition. The shulker screen is handled in the background and is
+  not displayed.
 
-Projectile priority: arrows first (spectral arrows next), then firework
-rockets. Loose items already in the inventory are preferred over shulker-box
-contents; shulker boxes are checked in visual inventory order (main inventory
-rows left to right, top to bottom, then the hotbar). Each refill takes one whole
-container slot from a shulker box (a full stack when available), regardless of
-the stack size. Firework rockets are swapped onto the free hand, matching
-vanilla crossbow loading.
+Projectile priority is fully positional, so it can be rearranged by moving items
+around: shulker boxes are opened in visual inventory order (main inventory rows
+left to right, top to bottom, then the hotbar), and inside each box the first
+projectile in box slot order wins — whichever type it is. The first box being a
+firework box makes fireworks the highest priority. Each refill takes one whole
+container slot from the box (a full stack when available), regardless of the
+stack size. Arrows are quick-moved into the inventory; firework rockets are
+swapped onto the free hand, matching vanilla crossbow loading. Loose firework
+rockets in the inventory are only used when no projectile shulker box remains.
 
 AxShulkers refill requires the server to run
 [AxShulkers](https://github.com/Artillex-Studios/AxShulkers) with

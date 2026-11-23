@@ -25,8 +25,6 @@ public final class AxShulkersArrowRefill {
 	private static State state = State.IDLE;
 	private static int nextShulkerVisualIndex;
 	private static int openInventorySlot = -1;
-	private static int fireworkShulkerSlot = -1;
-	private static boolean revisitFireworkPass;
 	private static int waitTicks;
 	private static int retryCooldown;
 
@@ -106,8 +104,6 @@ public final class AxShulkersArrowRefill {
 		}
 
 		nextShulkerVisualIndex = 0;
-		fireworkShulkerSlot = -1;
-		revisitFireworkPass = false;
 		return tryNextShulker(minecraft, player, gameMode);
 	}
 
@@ -116,51 +112,27 @@ public final class AxShulkersArrowRefill {
 			return true;
 		}
 
-		if (revisitFireworkPass) {
-			// Arrow pass found no arrows: reopen the first shulker box that held fireworks.
-			int target = fireworkShulkerSlot;
-			fireworkShulkerSlot = -1;
-			if (target < 0 || !player.getInventory().getItem(target).is(ItemTags.SHULKER_BOXES)) {
-				finish(false);
-				return true;
-			}
-			return openShulkerAt(minecraft, player, gameMode, target);
-		}
-
 		Inventory inventory = player.getInventory();
 		while (nextShulkerVisualIndex < VISUAL_ORDER.length) {
 			int inventorySlot = VISUAL_ORDER[nextShulkerVisualIndex++];
 			if (!inventory.getItem(inventorySlot).is(ItemTags.SHULKER_BOXES)) {
 				continue;
 			}
-			return openShulkerAt(minecraft, player, gameMode, inventorySlot);
-		}
 
-		// No shulker box held arrows. Loose fireworks come before reopening a shulker box.
-		if (tryTakeLooseFirework(player, gameMode)) {
-			finish(true);
+			OptionalInt menuSlot = player.inventoryMenu.findSlot(inventory, inventorySlot);
+			if (menuSlot.isEmpty()) {
+				continue;
+			}
+
+			openInventorySlot = inventorySlot;
+			waitTicks = 0;
+			state = State.WAITING_FOR_CONTAINER;
+			gameMode.handleContainerInput(player.inventoryMenu.containerId, menuSlot.getAsInt(), 1, ContainerInput.PICKUP, player);
 			return true;
 		}
 
-		if (fireworkShulkerSlot >= 0) {
-			revisitFireworkPass = true;
-			return true;
-		}
-		finish(false);
-		return true;
-	}
-
-	private static boolean openShulkerAt(Minecraft minecraft, LocalPlayer player, MultiPlayerGameMode gameMode, int inventorySlot) {
-		OptionalInt menuSlot = player.inventoryMenu.findSlot(player.getInventory(), inventorySlot);
-		if (menuSlot.isEmpty()) {
-			finish(false);
-			return true;
-		}
-
-		openInventorySlot = inventorySlot;
-		waitTicks = 0;
-		state = State.WAITING_FOR_CONTAINER;
-		gameMode.handleContainerInput(player.inventoryMenu.containerId, menuSlot.getAsInt(), 1, ContainerInput.PICKUP, player);
+		// No shulker box held projectiles: fall back to loose firework rockets.
+		finish(tryTakeLooseFirework(player, gameMode));
 		return true;
 	}
 
@@ -194,37 +166,47 @@ public final class AxShulkersArrowRefill {
 		}
 
 		waitTicks++;
-		int arrowSlot = findArrowSlot(containerMenu, shulkerSlotCount);
-		if (arrowSlot >= 0) {
-			// One whole shulker slot per refill, regardless of the stack size.
-			gameMode.handleContainerInput(containerMenu.containerId, arrowSlot, 0, ContainerInput.QUICK_MOVE, player);
-			boolean movedArrows = hasInventoryArrows(player.getInventory());
+		// The first projectile in box slot order decides the type: whichever comes
+		// first from left to right, top to bottom.
+		int projectileSlot = findProjectileSlot(containerMenu, shulkerSlotCount);
+		if (projectileSlot >= 0) {
+			boolean movedProjectile = containerMenu.getSlot(projectileSlot).getItem().is(Items.FIREWORK_ROCKET)
+				? swapToFreeHand(containerMenu, projectileSlot, player, gameMode)
+				: moveSlotToInventory(containerMenu, projectileSlot, player, gameMode);
 			player.closeContainer();
-			finish(movedArrows);
+			finish(movedProjectile);
 			return true;
 		}
 
-		int fireworkSlot = findFireworkSlot(containerMenu, shulkerSlotCount);
-		if (fireworkSlot >= 0 && revisitFireworkPass) {
-			// Vanilla crossbows load fireworks from a hand only, so swap one slot onto the free hand.
-			int swapButton = getFreeHandSlot(player);
-			gameMode.handleContainerInput(containerMenu.containerId, fireworkSlot, swapButton, ContainerInput.SWAP, player);
-			boolean movedFirework = isFreeHandHoldingFirework(player);
-			player.closeContainer();
-			finish(movedFirework);
-			return true;
-		}
-
-		if (waitTicks >= EMPTY_CONTENT_WAIT_TICKS) {
-			if (!revisitFireworkPass && fireworkSlot >= 0 && fireworkShulkerSlot < 0) {
-				// Keep looking for arrows first; remember this box for a later fireworks pass.
-				fireworkShulkerSlot = openInventorySlot;
-			}
+		// Content arrived but holds no projectile (or stayed empty long enough): move on.
+		if (hasAnyShulkerItem(containerMenu, shulkerSlotCount) || waitTicks >= EMPTY_CONTENT_WAIT_TICKS) {
 			player.closeContainer();
 			state = State.TRYING_NEXT_SHULKER;
 			waitTicks = 0;
 		}
 		return true;
+	}
+
+	private static boolean moveSlotToInventory(
+		AbstractContainerMenu containerMenu,
+		int projectileSlot,
+		LocalPlayer player,
+		MultiPlayerGameMode gameMode
+	) {
+		// One whole shulker slot per refill, regardless of the stack size.
+		gameMode.handleContainerInput(containerMenu.containerId, projectileSlot, 0, ContainerInput.QUICK_MOVE, player);
+		return hasInventoryArrows(player.getInventory());
+	}
+
+	private static boolean swapToFreeHand(
+		AbstractContainerMenu containerMenu,
+		int projectileSlot,
+		LocalPlayer player,
+		MultiPlayerGameMode gameMode
+	) {
+		// Vanilla crossbows load fireworks from a hand only, so swap one slot onto the free hand.
+		gameMode.handleContainerInput(containerMenu.containerId, projectileSlot, getFreeHandSlot(player), ContainerInput.SWAP, player);
+		return isFreeHandHoldingFirework(player);
 	}
 
 	private static boolean tryTakeLooseFirework(LocalPlayer player, MultiPlayerGameMode gameMode) {
@@ -263,27 +245,23 @@ public final class AxShulkersArrowRefill {
 		return mainHandItem.is(Items.FIREWORK_ROCKET);
 	}
 
-	private static int findArrowSlot(AbstractContainerMenu menu, int shulkerSlotCount) {
-		int spectralSlot = -1;
+	private static int findProjectileSlot(AbstractContainerMenu menu, int shulkerSlotCount) {
 		for (int slot = 0; slot < shulkerSlotCount; slot++) {
 			ItemStack stack = menu.getSlot(slot).getItem();
-			if (stack.is(ItemTags.ARROWS) && !stack.is(Items.SPECTRAL_ARROW)) {
-				return slot;
-			}
-			if (spectralSlot < 0 && stack.is(Items.SPECTRAL_ARROW)) {
-				spectralSlot = slot;
-			}
-		}
-		return spectralSlot;
-	}
-
-	private static int findFireworkSlot(AbstractContainerMenu menu, int shulkerSlotCount) {
-		for (int slot = 0; slot < shulkerSlotCount; slot++) {
-			if (menu.getSlot(slot).getItem().is(Items.FIREWORK_ROCKET)) {
+			if (stack.is(ItemTags.ARROWS) || stack.is(Items.FIREWORK_ROCKET)) {
 				return slot;
 			}
 		}
 		return -1;
+	}
+
+	private static boolean hasAnyShulkerItem(AbstractContainerMenu menu, int shulkerSlotCount) {
+		for (int slot = 0; slot < shulkerSlotCount; slot++) {
+			if (menu.getSlot(slot).hasItem()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static int getShulkerSlotCount(AbstractContainerMenu menu, Inventory inventory) {
@@ -352,8 +330,6 @@ public final class AxShulkersArrowRefill {
 		state = State.IDLE;
 		nextShulkerVisualIndex = 0;
 		openInventorySlot = -1;
-		fireworkShulkerSlot = -1;
-		revisitFireworkPass = false;
 		waitTicks = 0;
 		retryCooldown = success ? 0 : FAILURE_RETRY_TICKS;
 	}
@@ -362,8 +338,6 @@ public final class AxShulkersArrowRefill {
 		state = State.IDLE;
 		nextShulkerVisualIndex = 0;
 		openInventorySlot = -1;
-		fireworkShulkerSlot = -1;
-		revisitFireworkPass = false;
 		waitTicks = 0;
 		retryCooldown = 0;
 	}
