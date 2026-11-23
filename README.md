@@ -29,11 +29,14 @@ Projectile priority is fully positional, so it can be rearranged by moving items
 around: shulker boxes are opened in visual inventory order (main inventory rows
 left to right, top to bottom, then the hotbar), and inside each box the first
 projectile in box slot order wins — whichever type it is. The first box being a
-firework box makes fireworks the highest priority. Each refill takes one whole
-container slot from the box (a full stack when available), regardless of the
-stack size. Arrows are quick-moved into the inventory; firework rockets are
-swapped onto the free hand, matching vanilla crossbow loading. Loose firework
-rockets in the inventory are only used when no projectile shulker box remains.
+firework box makes fireworks the highest priority. Plain flight-duration
+rockets (the three gunpowder recipes, no explosion attached) are ignored and
+never auto-loaded; only fireworks carrying explosion effects are used. Each
+refill takes one whole container slot from the box (a full stack when
+available), regardless of the stack size. Arrows are quick-moved into the
+inventory; fireworks are swapped onto the free hand, matching vanilla crossbow
+loading. Loose effect fireworks in the inventory are only used when no
+projectile shulker box remains.
 
 AxShulkers refill requires the server to run
 [AxShulkers](https://github.com/Artillex-Studios/AxShulkers) with

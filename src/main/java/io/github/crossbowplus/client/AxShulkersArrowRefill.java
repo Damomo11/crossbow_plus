@@ -6,6 +6,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -13,6 +14,7 @@ import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.Fireworks;
 import org.jspecify.annotations.Nullable;
 
 public final class AxShulkersArrowRefill {
@@ -168,11 +170,11 @@ public final class AxShulkersArrowRefill {
 		waitTicks++;
 		// The first projectile in box slot order decides the type: whichever comes
 		// first from left to right, top to bottom.
-		int projectileSlot = findProjectileSlot(containerMenu, shulkerSlotCount);
-		if (projectileSlot >= 0) {
-			boolean movedProjectile = containerMenu.getSlot(projectileSlot).getItem().is(Items.FIREWORK_ROCKET)
-				? swapToFreeHand(containerMenu, projectileSlot, player, gameMode)
-				: moveSlotToInventory(containerMenu, projectileSlot, player, gameMode);
+			int projectileSlot = findProjectileSlot(containerMenu, shulkerSlotCount);
+			if (projectileSlot >= 0) {
+				boolean movedProjectile = isProjectileFirework(containerMenu.getSlot(projectileSlot).getItem())
+					? swapToFreeHand(containerMenu, projectileSlot, player, gameMode)
+					: moveSlotToInventory(containerMenu, projectileSlot, player, gameMode);
 			player.closeContainer();
 			finish(movedProjectile);
 			return true;
@@ -214,7 +216,7 @@ public final class AxShulkersArrowRefill {
 		int swapButton = getFreeHandSlot(player);
 		for (int visualIndex = 0; visualIndex < VISUAL_ORDER.length; visualIndex++) {
 			int inventorySlot = VISUAL_ORDER[visualIndex];
-			if (!inventory.getItem(inventorySlot).is(Items.FIREWORK_ROCKET)) {
+			if (!isExplosiveFirework(inventory.getItem(inventorySlot))) {
 				continue;
 			}
 
@@ -240,19 +242,34 @@ public final class AxShulkersArrowRefill {
 	private static boolean isFreeHandHoldingFirework(LocalPlayer player) {
 		ItemStack mainHandItem = player.getMainHandItem();
 		if (mainHandItem.getItem() instanceof CrossbowItem) {
-			return player.getOffhandItem().is(Items.FIREWORK_ROCKET);
+			return isProjectileFirework(player.getOffhandItem());
 		}
-		return mainHandItem.is(Items.FIREWORK_ROCKET);
+		return isProjectileFirework(mainHandItem);
 	}
 
 	private static int findProjectileSlot(AbstractContainerMenu menu, int shulkerSlotCount) {
 		for (int slot = 0; slot < shulkerSlotCount; slot++) {
 			ItemStack stack = menu.getSlot(slot).getItem();
-			if (stack.is(ItemTags.ARROWS) || stack.is(Items.FIREWORK_ROCKET)) {
+			if (stack.is(ItemTags.ARROWS) || isExplosiveFirework(stack)) {
 				return slot;
 			}
 		}
 		return -1;
+	}
+
+	private static boolean isProjectileFirework(ItemStack stack) {
+		return stack.is(Items.FIREWORK_ROCKET);
+	}
+
+	private static boolean isExplosiveFirework(ItemStack stack) {
+		// Skip plain flight-duration rockets (the three gunpowder recipes):
+		// only take fireworks that actually carry explosion effects.
+		if (!isProjectileFirework(stack)) {
+			return false;
+		}
+
+		Fireworks fireworks = stack.get(DataComponents.FIREWORKS);
+		return fireworks != null && !fireworks.explosions().isEmpty();
 	}
 
 	private static boolean hasAnyShulkerItem(AbstractContainerMenu menu, int shulkerSlotCount) {
